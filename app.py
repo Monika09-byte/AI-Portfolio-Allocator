@@ -6,6 +6,32 @@ from models.return_predictor import predict_returns
 from utils.risk_profiler import get_risk_profile
 from optimization.portfolio_optimizer import optimize_portfolio
 
+def calculate_portfolio_metrics(weights, returns):
+    """
+    Calculate expected return, volatility, and Sharpe ratio.
+    """
+    # Convert to aligned lists
+    w = []
+    r = []
+
+    for asset in weights:
+        w.append(weights[asset])
+        r.append(returns[asset])
+
+    w = pd.Series(w)
+    r = pd.Series(r)
+
+    expected_return = (w * r).sum()
+
+    # Simple volatility proxy (weighted std dev)
+    volatility = (w * (r - r.mean())**2).sum() ** 0.5
+
+    # Assume risk-free rate = 4% (cash)
+    risk_free_rate = 0.04
+    sharpe_ratio = (expected_return - risk_free_rate) / volatility if volatility != 0 else 0
+
+    return expected_return, volatility, sharpe_ratio
+
 
 # ---------- Page Config ----------
 st.set_page_config(
@@ -52,6 +78,10 @@ if generate:
     risk_profile = get_risk_profile(risk_level)
     predicted_returns = predict_returns()
     final_portfolio = optimize_portfolio(predicted_returns, risk_profile)
+    # ---------- Risk Metrics ----------
+    portfolio_return, portfolio_volatility, sharpe_ratio = calculate_portfolio_metrics(
+    final_portfolio, predicted_returns
+)
 
     # ---------- Metrics ----------
     col1, col2, col3 = st.columns(3)
